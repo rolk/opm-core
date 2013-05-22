@@ -100,3 +100,35 @@ function (vcs_info)
   set (VCS_SHA1 "${VCS_SHA1}" PARENT_SCOPE)
   set (VCS_DECOR "${VCS_DECOR}" PARENT_SCOPE)
 endfunction (vcs_info)
+
+# - Create a version string which can be printed in code
+#
+# Input:
+#  project    Name of the project, e.g. "opm-core". It is assumed that
+#             the variables ${project}_VERSION_MAJOR and _MINOR is set.
+#
+# Output:
+#  Sets the variable ${project}_VERSION_STRING to a string containing
+#  both the version number and Git SHA of the code. Note that the name
+#  will be changed to uppercase and dashes changed to underscore.
+#
+# Example:
+#  vcs_verstr (opm-core)
+#  configure_vars (FILE CXX config.h WRITE OPM_CORE_VERSION_STRING)
+function (vcs_verstr project)
+  # basic version string, e.g. "1.0"
+  set (str "${${project}_VERSION_MAJOR}.${${project}_VERSION_MINOR}")
+  # append patch level, if we have such a thing
+  if (${project}_VERSION_PATCH)
+	set (str "${str}.${${project}_VERSION_PATCH}")
+  endif (${project}_VERSION_PATCH)
+  # if this project was under version control, include the SHA hash code
+  if (VCS_SHA1)
+	set (str "${str} (${VCS_SHA1}${VCS_DECOR})")
+  endif (VCS_SHA1)
+  # make name of version string embeddable in code
+  string (TOUPPER "${project}_VERSION_STRING" name)
+  string (REPLACE "-" "_" name "${name}")
+  # export this string back to the parent
+  set (${name} "${str}" PARENT_SCOPE)
+endfunction (vcs_verstr project)
