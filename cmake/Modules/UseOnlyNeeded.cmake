@@ -29,8 +29,32 @@ if ((CMAKE_CXX_PLATFORM_ID STREQUAL "Linux") AND CMAKE_COMPILER_IS_GNUCC)
   endforeach (_module)
   # if we didn't have any problems, then go ahead and add
   if (NOT _underlinked)
-	prepend (CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed")
-	prepend (CMAKE_MODULE_LINKER_FLAGS "-Wl,--as-needed")
-	prepend (CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
+	# some versions of the linker plugin used in optimization have problems
+	# if we don't link all the libraries; this would prohibit the use of
+	# --as-needed
+	set (_as_needed_flag "-Wl,--as-needed")
+	string (TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
+	set (_curr_opts "${CMAKE_C_FLAGS_${_build_type}}")
+	# compile this little program which seems to recreate the problem
+	include (CMakePushCheckState)
+	include (CheckCSourceCompiles)
+	cmake_push_check_state ()
+	set (CMAKE_REQUIRED_FLAGS "${_curr_opts} ${_as_needed_flag}")
+	set (CMAKE_REQUIRED_LIBRARIES "m")
+	check_c_source_compiles ("
+#include <math.h>
+int main (int argc, char** argp) {
+  sqrt (argc);
+  return 0;
+}
+	" HAVE_LINKER_PLUGIN_WITH_ASNEEDED)
+	cmake_pop_check_state ()
+	# if we weren't able to do so, then disable the linker plugin
+	if (HAVE_LINKER_PLUGIN_WITH_ASNEEDED)
+	  # add the set of final linker options determined
+	  prepend (CMAKE_EXE_LINKER_FLAGS ${_as_needed_flag})
+	  prepend (CMAKE_MODULE_LINKER_FLAGS ${_as_needed_flag})
+	  prepend (CMAKE_SHARED_LINKER_FLAGS ${_as_needed_flag})
+	endif (HAVE_LINKER_PLUGIN_WITH_ASNEEDED)
   endif (NOT _underlinked)
 endif ((CMAKE_CXX_PLATFORM_ID STREQUAL "Linux")  AND CMAKE_COMPILER_IS_GNUCC)
