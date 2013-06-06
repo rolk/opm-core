@@ -3,13 +3,13 @@
 # Add the -Wl,--as-needed flag to the default linker flags on Linux
 # in order to get only the minimal set of dependencies.
 
-function (prepend var_name value)
+function (prepend var_name)
   if (${var_name})
-	set (${var_name} "${value} ${${var_name}}" PARENT_SCOPE)
+	set (${var_name} "${ARGN} ${${var_name}}" PARENT_SCOPE)
   else (${var_name})
-	set (${var_name} "${value}")
+	set (${var_name} "${ARGN}")
   endif (${var_name})
-endfunction (prepend var_name value)
+endfunction (prepend var_name)
 
 # only ELF shared objects can be underlinked, and only GNU will accept
 # these parameters; otherwise just leave it to the defaults
