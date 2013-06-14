@@ -280,3 +280,13 @@ foreach(_HEADER tuple tr1/tuple type_traits tr1/type_traits)
   string(TOUPPER ${_HEADER_VAR} _HEADER_VAR )
   check_include_file_cxx(${_HEADER} "HAVE_${_HEADER_VAR}")
 endforeach(_HEADER tuple tr1/tuple tr1/type_traits)
+
+# determine whether we have passed the "bar" for being C++11 compliant
+# enough. (many compilers have enough features to let us use them even
+# though they don't implement the entire list)
+if (CXX11Features_FIND_REQUIRED AND NOT (TRUE))
+  set (CXX11FEATURES_FOUND FALSE)
+  if (NOT CXX11Features_FIND_QUIETLY)
+    message (STATUS "Warning: C++11 compatibility is NOT on GCC >= 4.4 level!")
+  endif (NOT CXX11Features_FIND_QUIETLY)
+endif (CXX11Features_FIND_REQUIRED AND NOT (TRUE))
