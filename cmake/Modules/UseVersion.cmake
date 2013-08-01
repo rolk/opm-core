@@ -49,3 +49,29 @@ else ()
 	add_dependencies (${${project}_TARGET} update-version)
   endif ()
 endif ()
+
+# parse the project name (!) into constituencies, e.g. "opm" and "core"
+set (_proj_name_regexp "([^-]+)-(.*)")
+string (REGEX REPLACE "${_proj_name_regexp}" "\\1" _proj_suite "${project}")
+string (REGEX REPLACE "${_proj_name_regexp}" "\\2" _proj_module "${project}")
+
+# if we have a template file, we use that as an indicator that we should
+# generate a version information file in the build direcory
+set (_ver_templ "${PROJECT_SOURCE_DIR}/${_proj_suite}/${_proj_module}/version.h.in")
+set (_version_h "${PROJECT_BINARY_DIR}/${_proj_suite}/${_proj_module}/version.h")
+if (EXISTS "${_ver_templ}")
+  # use uppercase versions of the name in header
+  string (TOUPPER "${project}" _proj_upper)
+  string (REPLACE "-" "_" _proj_upper "${_proj_upper}")
+
+  # start with the predefined content...
+  configure_file ("${_ver_templ}" "${_version_h}" COPYONLY)
+
+  # ...and then add the version bits defined here
+  file (APPEND "${_version_h}"
+	"\n/* current API version (for use with DUNE_VERSION_xxx): */
+#define ${_proj_upper}_MAJOR ${${project}_VERSION_MAJOR}
+#define ${_proj_upper}_MINOR ${${project}_VERSION_MINOR}
+#define ${_proj_upper}_REVISION 0\n"
+  )
+endif ()
