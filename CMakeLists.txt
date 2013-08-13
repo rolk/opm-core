@@ -16,8 +16,23 @@
 
 cmake_minimum_required (VERSION 2.8)
 
+# bootstrap; locate the rest of the build system
+if (NOT OPM_BUILD_ROOT)
+	find_path (OPM_BUILD_ROOT
+		cmake/Modules/OpmInit.cmake
+		PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../opm-build
+	  ${CMAKE_CURRENT_BINARY_DIR}../../opm-build
+	  ${CMAKE_INSTALL_PREFIX}/share/opm
+		DOC "Path to common build system"
+		NO_DEFAULT_PATH
+		)
+endif ()
+# bail out if we haven't found the macros anywhere
+if (NOT OPM_BUILD_ROOT)
+	message (FATAL_ERROR "Cannot find opm-build!")
+endif ()
+
 # additional search modules
-set (OPM_BUILD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 list (APPEND CMAKE_MODULE_PATH "${OPM_BUILD_ROOT}/cmake/Modules")
 
 # not the same location as most of the other projects; this hook overrides
