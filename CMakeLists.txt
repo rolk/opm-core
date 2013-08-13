@@ -17,7 +17,8 @@
 cmake_minimum_required (VERSION 2.8)
 
 # additional search modules
-list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+set (OPM_BUILD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+list (APPEND CMAKE_MODULE_PATH "${OPM_BUILD_ROOT}/cmake/Modules")
 
 # not the same location as most of the other projects; this hook overrides
 macro (dir_hook)
