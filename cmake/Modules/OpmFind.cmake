@@ -129,6 +129,12 @@ macro (find_and_append_package_to prefix name)
 	unset (${name}_DIR CACHE)
   endif ((NOT (_${name}_exempted EQUAL -1)) AND (DEFINED ${name}_DIR))
 
+  # if we're told not to look for the package, pretend it was never found
+  if (CMAKE_DISABLE_FIND_PACKAGE_${name})
+	set (${name}_FOUND FALSE)
+	set (${NAME}_FOUND FALSE)
+  endif ()
+
   # using config mode is better than using module (aka. find) mode
   # because then the package has already done all its probes and
   # stored them in the config file for us
