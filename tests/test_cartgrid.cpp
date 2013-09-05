@@ -35,6 +35,7 @@
 #include <opm/core/grid/cart_grid.h>
 #include <opm/core/grid.h>
 #include <stdio.h>
+#include <vector>
 
 BOOST_AUTO_TEST_SUITE ()
 
@@ -53,6 +54,23 @@ BOOST_AUTO_TEST_CASE (facenumbers)
         }
     }
     destroy_grid(g);
+}
+
+BOOST_AUTO_TEST_CASE (globalindex)
+{
+	const int nx = 2;
+	const int ny = 2;
+	const int nz = 2;
+	std::vector <int> hits (nx*ny*nz, 0);
+	struct UnstructuredGrid *g = create_grid_cart3d (nx, ny, nz);
+	for (unsigned int i = 0; i < nx*ny*nz; ++i) {
+		hits[g->global_cell[i]]++;
+	}
+	std::vector <int> ones (nx*ny*nz, 1);
+	// each global index should be hit exactly once
+	for (unsigned int i = 0; i < hits.size(); ++i) {
+		BOOST_REQUIRE_EQUAL (hits[i], ones[i]);
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END()

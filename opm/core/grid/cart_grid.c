@@ -38,6 +38,7 @@
 
 static struct UnstructuredGrid *allocate_cart_grid_3d(int nx, int ny, int nz);
 static void fill_cart_topology_3d(struct UnstructuredGrid *G);
+static void fill_cart_indices(struct UnstructuredGrid *G);
 static void fill_cart_geometry_3d(struct UnstructuredGrid *G,
                                   const double            *x,
                                   const double            *y,
@@ -168,6 +169,17 @@ create_grid_tensor3d(int           nx    ,
 /* Static functions follow:                                              */
 /* --------------------------------------------------------------------- */
 
+static void
+fill_cart_indices(struct UnstructuredGrid *G)
+{
+    int i;
+    /* elements in a Cartesian grid are already arranged in         */
+    /* lexicographic order, and there are no holes so the numbering */
+    /* becomes continuous.                                          */
+    for (i = 0; i < G->number_of_cells; ++i) {
+        G->global_cell[i] = i;
+    }
+}
 
 static struct UnstructuredGrid *
 allocate_cart_grid(size_t ndims ,
@@ -176,12 +188,29 @@ allocate_cart_grid(size_t ndims ,
                    size_t nnodes)
 {
     size_t nfacenodes, ncellfaces;
+    struct UnstructuredGrid *g;
 
     nfacenodes = nfaces * (2 * (ndims - 1));
     ncellfaces = ncells * (2 * ndims);
 
-    return allocate_grid(ndims, ncells, nfaces,
-                         nfacenodes, ncellfaces, nnodes);
+    g = allocate_grid(ndims, ncells, nfaces,
+                      nfacenodes, ncellfaces, nnodes);
+
+    /* only proceed if we could allocate a general grid */
+    if (g) {
+
+        /* we always have global indexing in Cartesian grids */
+        g->global_cell = malloc(ncells * sizeof *g->global_cell);
+
+        /* if allocation failed, then deallocate the _entire_ grid */
+        /* before returning failure.                               */
+        if(!g->global_cell) {
+            destroy_grid (g);
+            g = NULL;
+        }
+    }
+
+    return g;
 }
 
 
@@ -350,6 +379,8 @@ fill_cart_topology_3d(struct UnstructuredGrid *G)
             }
         }
     }
+
+    fill_cart_indices(G);
 }
 
 /* --------------------------------------------------------------------- */
@@ -627,6 +658,8 @@ fill_cart_topology_2d(struct UnstructuredGrid *G)
             }
         }
     }
+
+    fill_cart_indices(G);
 }
 
 /* --------------------------------------------------------------------- */
