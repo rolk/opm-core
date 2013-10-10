@@ -5,6 +5,17 @@ is_compiler_gcc_compatible ()
 include(TestCXXAcceptsFlag)
 
 macro (opm_defaults opm)
+  # if we are told to use static libraries then rig the search pattern so
+  # these match before the dynamic ones. if there are no static libraries
+  # however, then the dynamic one will still be found.
+  option (USE_STATIC "Prefer static libraries if possible" OFF)
+  if (USE_STATIC)
+	set (CMAKE_FIND_LIBRARY_SUFFIXES
+	  ${CMAKE_STATIC_LIBRARY_SUFFIX}
+	  ${CMAKE_FIND_LIBRARY_SUFFIXES}
+	  )
+  endif (USE_STATIC)
+
   # if we are installing a development version (default when checking out of
   # VCS), then remember which directories were used when configuring. package
   # distribution should disable this option.
