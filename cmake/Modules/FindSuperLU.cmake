@@ -45,8 +45,16 @@ set(SUPERLU_BLAS_LIBRARY "")
 if (BLAS_FOUND)
   list(APPEND SUPERLU_BLAS_LIBRARY "${BLAS_LIBRARIES}")
 elseif(SUPERLU_ROOT)
+  option (SUPERLU_BLAS_USE_STATIC "Link SuperLU BLAS library statically" OFF)
+  mark_as_advanced (SUPERLU_BLAS_USE_STATIC)
+  if (SUPERLU_BLAS_USE_STATIC)
+	set (_blas_name   "${CMAKE_STATIC_LIBRARY_PREFIX}blas${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  else (SUPERLU_BLAS_USE_STATIC)
+	set (_blas_name "blas")
+  endif (SUPERLU_BLAS_USE_STATIC)
+  
   find_library(SUPERLU_BLAS_LIBRARY
-    NAMES "blas"
+    NAMES "${_blas_name}"
     PATHS ${SUPERLU_ROOT}
     PATH_SUFFIXES "lib" "lib${_BITS}" "lib/${CMAKE_LIBRARY_ARCHITECTURE}"
     NO_DEFAULT_PATH)
@@ -76,8 +84,28 @@ list(APPEND CMAKE_REQUIRED_INCLUDES "${SUPERLU_INCLUDE_DIR}")
 
 # look for actual SuperLU library
 if (NOT SUPERLU_LIBRARY)
+  set (_superlu_names_init
+	superlu_4.3
+	superlu_4.2
+	superlu_4.1
+	superlu_4.0
+	superlu_3.1
+	superlu_3.0
+	superlu
+	)
+  option (SUPERLU_USE_STATIC "Link SuperLU library statically" OFF)
+  mark_as_advanced (SUPERLU_USE_STATIC)
+  if (SUPERLU_USE_STATIC)
+	set (_superlu_names)
+	foreach (_name IN LIST _superlu_names_init)
+	  list (APPEND _superlu_names "${CMAKE_STATIC_LIBRARY_PREFIX}${_name}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	endforeach (_name)
+  else (SUPERLU_USE_STATIC)
+	set (_superlu_names ${_superlu_names_init})
+  endif (SUPERLU_USE_STATIC)
+  
   find_library(SUPERLU_LIBRARY
-    NAMES "superlu_4.3" "superlu_4.2" "superlu_4.1" "superlu_4.0" "superlu_3.1" "superlu_3.0" "superlu"
+    NAMES ${_superlu_names}
     PATHS ${SUPERLU_ROOT}
     PATH_SUFFIXES "lib" "lib${_BITS}" "lib/${CMAKE_LIBRARY_ARCHITECTURE}"
     ${_no_default_path}
