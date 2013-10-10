@@ -69,7 +69,13 @@ if (NOT LAPACK_FOUND)
 endif (NOT LAPACK_FOUND)
 
 # we also need the math part of the runtime library
-find_library (MATH_LIBRARY NAMES "m")
+option (M_USE_STATIC "Link math library statically" OFF)
+mark_as_advanced (M_USE_STATIC)
+if (M_USE_STATIC)
+  find_library (MATH_LIBRARY NAMES "${CMAKE_STATIC_LIBRARY_PREFIX}m${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else (M_USE_STATIC)
+  find_library (MATH_LIBRARY NAMES "m")
+endif (M_USE_STATIC)
 set (SuiteSparse_EXTRA_LIBS ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${MATH_LIBRARY})
 
 # if we don't get any further clues about where to look, then start
@@ -142,8 +148,16 @@ endif (CMAKE_SIZEOF_VOID_P)
 # if SuiteSparse >= 4.0 we must also link with libsuitesparseconfig
 # assume that this is the case if we find the library; otherwise just
 # ignore it (older versions don't have a file named like this)
+option (SUITESPARSECONFIG_USE_STATIC "Link suitesparseconfig library statically" OFF)
+mark_as_advanced (SUITESPARSECONFIG_USE_STATIC)
+if (SUITESPARSECONFIG_USE_STATIC)
+  set (_s_s_config_name  "${CMAKE_STATIC_LIBRARY_PREFIX}suitesparseconfig${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else (SUITESPARSECONFIG_USE_STATIC)
+  set (_s_s_config_name "suitesparseconfig")
+endif (SUITESPARSECONFIG_USE_STATIC)
+
 find_library (config_LIBRARY
-  NAMES suitesparseconfig
+  NAMES ${_s_s_config_name}
   PATHS ${SuiteSparse_SEARCH_PATH}
   PATH_SUFFIXES ".libs" "lib" "lib${_BITS}" "lib/${CMAKE_LIBRARY_ARCHITECTURE}" "lib/ufsparse"
   ${_no_default_path}
@@ -167,8 +181,17 @@ foreach (module IN LISTS SuiteSparse_MODULES)
 	PATH_SUFFIXES "include" "include/suitesparse" "include/ufsparse" "${MODULE}/Include"
 	${_no_default_path}
 	)
+
+  option (${MODULE}_USE_STATIC "Link ${module} library statically" OFF)
+  mark_as_advanced (${MODULE}_USE_STATIC)
+  if (${MODULE}_USE_STATIC)
+	set (_mod_lib_name "${CMAKE_STATIC_LIBRARY_PREFIX}${module}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  else (${MODULE}_USE_STATIC)
+	set (_mod_lib_name "${module}")
+  endif (${MODULE}_USE_STATIC)
+
   find_library (${MODULE}_LIBRARY
-	NAMES ${module}
+	NAMES ${_mod_lib_name}
 	PATHS ${SuiteSparse_SEARCH_PATH}
 	PATH_SUFFIXES "lib/.libs" "lib" "lib${_BITS}" "lib/${CMAKE_LIBRARY_ARCHITECTURE}" "lib/ufsparse" "${MODULE}/Lib"
 	${_no_default_path}
