@@ -60,8 +60,20 @@ find_path (ERT_GEN_INCLUDE_DIR
 if (CMAKE_SIZEOF_VOID_P)
   math (EXPR _BITS "8 * ${CMAKE_SIZEOF_VOID_P}")
 endif (CMAKE_SIZEOF_VOID_P)
+option (ERT_USE_STATIC "Link SuperLU library statically" OFF)
+mark_as_advanced (ERT_USE_STATIC)
+if (ERT_USE_STATIC)
+  set (_ecl_name "${CMAKE_STATIC_LIBRARY_PREFIX}ecl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set (_geo_name "${CMAKE_STATIC_LIBRARY_PREFIX}ert_geometry${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set (_utl_name "${CMAKE_STATIC_LIBRARY_PREFIX}ert_util${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else (ERT_USE_STATIC)
+  set (_ecl_name "ecl")
+  set (_geo_name "ert_geometry")
+  set (_utl_name "ert_utils")
+endif (ERT_USE_STATIC)
+
 find_library (ERT_LIBRARY_ECL
-  NAMES "ecl"
+  NAMES "${_ecl_name}"
   HINTS "${ERT_ROOT}"
   PATHS "${PROJECT_BINARY_DIR}/../ert" "${PROJECT_BINARY_DIR}/../ert-build"
         "${PROJECT_BINARY_DIR}/../ert/devel"
@@ -70,7 +82,7 @@ find_library (ERT_LIBRARY_ECL
   ${_no_default_path}
   )
 find_library (ERT_LIBRARY_GEOMETRY
-  NAMES "ert_geometry"
+  NAMES "${_geo_name}"
   HINTS "${ERT_ROOT}"
   PATHS "${PROJECT_BINARY_DIR}/../ert" "${PROJECT_BINARY_DIR}/../ert-build"
         "${PROJECT_BINARY_DIR}/../ert/devel"
@@ -79,7 +91,7 @@ find_library (ERT_LIBRARY_GEOMETRY
   ${_no_default_path}
   )
 find_library (ERT_LIBRARY_UTIL
-  NAMES "ert_util"
+  NAMES "${_utl_name}"
   HINTS "${ERT_ROOT}"
   PATHS "${PROJECT_BINARY_DIR}/../ert" "${PROJECT_BINARY_DIR}/../ert-build"
         "${PROJECT_BINARY_DIR}/../ert/devel"
@@ -176,9 +188,13 @@ endif (LAPACK_FOUND)
 
 # math library (should exist on all unices; automatically linked on Windows)
 if (UNIX)
-  find_library (MATH_LIBRARY
-	NAMES "m"
-	)
+  option (MATH_USE_STATIC "Link math library statically" OFF)
+  mark_as_advanced (MATH_USE_STATIC)
+  if (MATH_USE_STATIC)
+	find_library (MATH_LIBRARY NAMES "${CMAKE_STATIC_LIBRARY_PREFIX}m${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  else (MATH_USE_STATIC)
+	find_library (MATH_LIBRARY NAMES "m")
+  endif (MATH_USE_STATIC)
   list (APPEND ERT_LIBRARIES ${MATH_LIBRARY})
 endif (UNIX)
 
