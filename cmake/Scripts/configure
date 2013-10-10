@@ -51,6 +51,7 @@ Optional Packages:
   --with-cmake=PROGRAM    use this program instead of \`cmake' to configure
   --with-buildname=TEXT   description passed to the CDash configuration
   --with-site=TEXT        site passed to the CDash configuration
+  --with-static-libs      prefer to use static libs if available (default:off)
 
 Some influential environment variables:
   CC          C compiler command
@@ -138,6 +139,8 @@ boost_opts=
 # configuration that is passed on to CTest/CDash
 buildname=
 site=
+# static_libs=" -DUSE_STATIC=OFF"
+static_libs=
 
 # default is to warn for unknown options, but this can be disabled
 option_check=yes
@@ -202,6 +205,10 @@ for OPT in "$@"; do
               ;;
             site)
               site=" -DSITE=\"${pkgloc}\""
+              continue
+              ;;
+            static-libs)
+              static_libs=" -DUSE_STATIC=ON"
               continue
               ;;
           esac
@@ -273,6 +280,11 @@ for OPT in "$@"; do
           pkgname=${pkgname#without-}
           # casing is of course different
           case "${pkgname}" in
+            static-libs)
+              static_libs=" -DUSE_STATIC=OFF"
+              # special flag: don't disable any particular package
+              pkgname=""
+              ;;
             option-checking)
               option_check=no
               # special flag: don't disable any particular package
@@ -509,7 +521,7 @@ done
 [ -n "${ENVVARS}" ] && ENVVARS="env ${ENVVARS} "
 
 # pass everything on to CMake
-CMDLINE="${ENVVARS}${CMAKE_COMMAND} \"${srcdir}\" ${use_ninja}\"-DCMAKE_INSTALL_PREFIX=$prefix\"${buildtype}${pch_use}${silent_rules}${debug_loc}${use_openmp}${use_mpi}${use_lto}${use_runpath}${use_tests}${use_samples}${use_underscoring}${c_compiler}${c_opts}${cxx_compiler}${cxx_opts}${fort_compiler}${fort_opts}${boost_opts}${buildname}${site} ${FEATURES}"
+CMDLINE="${ENVVARS}${CMAKE_COMMAND} \"${srcdir}\" ${use_ninja}\"-DCMAKE_INSTALL_PREFIX=$prefix\"${buildtype}${pch_use}${silent_rules}${debug_loc}${use_openmp}${use_mpi}${use_lto}${use_runpath}${use_tests}${use_samples}${use_underscoring}${c_compiler}${c_opts}${cxx_compiler}${cxx_opts}${fort_compiler}${fort_opts}${boost_opts}${buildname}${site}${static_libs} ${FEATURES}"
 echo --- calling CMake ---
 echo ${CMDLINE}
 eval exec ${CMDLINE}
