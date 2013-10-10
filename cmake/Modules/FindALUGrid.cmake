@@ -77,7 +77,15 @@ if (NOT ALUGRID_INCLUDE_DIR)
 endif()
 mark_as_advanced(ALUGRID_INCLUDE_DIR)
 
-find_library(ALUGRID_LIBRARY alugrid
+option (ALUGRID_USE_STATIC "Link ALUGrid library statically" OFF)
+mark_as_advanced (ALUGRID_USE_STATIC)
+if (ALUGRID_USE_STATIC)
+  set (_alugrid_name "${CMAKE_STATIC_LIBRARY_PREFIX}alugrid${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else (ALUGRID_USE_STATIC)
+  set (_alugrid_name "alugrid")
+endif (ALUGRID_USE_STATIC)
+
+find_library(ALUGRID_LIBRARY "${_alugrid_name}"
   PATHS "${ALUGRID_ROOT}" 
   PATH_SUFFIXES lib lib32 lib64 
   DOC "ALUGrid library"
