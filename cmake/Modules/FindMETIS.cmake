@@ -28,8 +28,16 @@ if (CMAKE_SIZEOF_VOID_P)
   math (EXPR _BITS "8 * ${CMAKE_SIZEOF_VOID_P}")
 endif (CMAKE_SIZEOF_VOID_P)
 
+option (METIS_USE_STATIC "Link METIS library statically" OFF)
+mark_as_advanced (METIS_USE_STATIC)
+if (METIS_USE_STATIC)
+  set (_metis_name "${CMAKE_STATIC_LIBRARY_PREFIX}metis${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else (METIS_USE_STATIC)
+  set (_metis_name "metis")
+endif (METIS_USE_STATIC)
+
 find_library(METIS_LIBRARIES
-  NAMES "metis"
+  NAMES "${_metis_name}"
   PATHS ${METIS_SEARCH_PATH}
   PATH_SUFFIXES "lib/.libs" "lib" "lib${_BITS}" "lib/${CMAKE_LIBRARY_ARCHITECTURE}"
   ${METIS_NO_DEFAULT_PATH})
