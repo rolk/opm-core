@@ -69,13 +69,13 @@ if (NOT LAPACK_FOUND)
 endif (NOT LAPACK_FOUND)
 
 # we also need the math part of the runtime library
-option (M_USE_STATIC "Link math library statically" OFF)
-mark_as_advanced (M_USE_STATIC)
-if (M_USE_STATIC)
+option (MATH_USE_STATIC "Link math library statically" OFF)
+mark_as_advanced (MATH_USE_STATIC)
+if (MATH_USE_STATIC)
   find_library (MATH_LIBRARY NAMES "${CMAKE_STATIC_LIBRARY_PREFIX}m${CMAKE_STATIC_LIBRARY_SUFFIX}")
-else (M_USE_STATIC)
+else (MATH_USE_STATIC)
   find_library (MATH_LIBRARY NAMES "m")
-endif (M_USE_STATIC)
+endif (MATH_USE_STATIC)
 set (SuiteSparse_EXTRA_LIBS ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${MATH_LIBRARY})
 
 # if we don't get any further clues about where to look, then start
