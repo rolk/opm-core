@@ -206,8 +206,19 @@ macro (find_opm_package module deps header lib defs prog conf)
 	  set (_no_system_lib "${_no_system}")
 	endif ()
 
+	# if we're told to use the static library, then only search for this
+	# variant. as usual, there is no clear convention for the property
+	# to set (sic); we use the shortest. otherwise just search for the
+	# default (doesn't necessarily imply that it will be dynamic)
+	option (${MODULE}_USE_STATIC "Link ${module} statically" OFF)
+	mark_as_advanced (${MODULE}_USE_STATIC)
+	if (${MODULE}_USE_STATIC)
+	  set (_lib_name "${CMAKE_STATIC_LIBRARY_PREFIX}${lib}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+	else (${MODULE}_USE_STATIC)
+	  set (_lib_name "${lib}")
+	endif (${MODULE}_USE_STATIC)
 	find_library (${module}_LIBRARY
-	  NAMES "${lib}"
+	  NAMES "${_lib_name}"
 	  PATHS ${_guess_bin}
 	  HINTS ${PkgConf_${module}_LIBRARY_DIRS} ${_guess_hints_bin}
 	  PATH_SUFFIXES "lib" "lib/.libs" ".libs" "lib${_BITS}" "lib/${CMAKE_LIBRARY_ARCHITECTURE}" "build-cmake/lib"
