@@ -36,6 +36,7 @@ class BlackoilState;
 class EclipseGridParser;
 class OutputWriter;
 namespace parameter { class ParameterGroup; }
+class BlackoilPropertiesInterface;
 class SimulatorTimer;
 class WellState;
 
@@ -56,6 +57,7 @@ protected:
                          std::shared_ptr <const EclipseGridParser> parser,
                          std::shared_ptr <const UnstructuredGrid> grid,
                          std::shared_ptr <const SimulatorTimer> timer,
+                         std::shared_ptr <const BlackoilPropertiesInterface> boprops,
                          std::shared_ptr <const BlackoilState> state,
                          std::shared_ptr <const WellState> wellState);
 
@@ -142,11 +144,12 @@ struct SimulatorOutput : public SimulatorOutputBase {
                      std::shared_ptr <const EclipseGridParser> parser,
                      std::shared_ptr <const UnstructuredGrid> grid,
                      std::shared_ptr <const SimulatorTimer> timer,
+                     std::shared_ptr <const BlackoilPropertiesInterface> boprops,
                      std::shared_ptr <const BlackoilState> state,
                      std::shared_ptr <const WellState> wellState,
                      std::shared_ptr <Simulator> sim)
         // send all other parameters to base class
-        : SimulatorOutputBase (params, parser, grid, timer, state, wellState)
+        : SimulatorOutputBase (params, parser, grid, timer, boprops,state, wellState)
 
         // store reference to simulator in derived class
         , sim_ (sim) {
@@ -164,6 +167,7 @@ struct SimulatorOutput : public SimulatorOutputBase {
                      const EclipseGridParser& parser,
                      const UnstructuredGrid& grid,
                      const SimulatorTimer& timer,
+                     const BlackoilPropertiesInterface& boprops,
                      const BlackoilState& state,
                      const WellState& wellState,
                      Simulator& sim)
@@ -172,6 +176,7 @@ struct SimulatorOutput : public SimulatorOutputBase {
                                share_obj (parser),
                                share_obj (grid),
                                share_obj (timer),
+                               share_obj (boprops),
                                share_obj (state),
                                share_obj (wellState))
 

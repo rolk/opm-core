@@ -290,7 +290,21 @@ struct EclipseRestart : public EclipseHandle <ecl_rst_file_type> {
                       const PhaseUsage uses,
                       const EclipseGridParser parser,
                       const int num_active_cells) {
-        const std::vector<int> dim = parser.getSPECGRID ().dimensions;
+        std::vector<int> dim(/*n=*/3);
+        if (parser.hasField("SPECGRID"))
+            dim = parser.getSPECGRID ().dimensions;
+        else if (parser.hasField("DXV")) {
+            assert(parser.hasField("DYV"));
+            assert(parser.hasField("DZV"));
+            dim[0] = parser.getFloatingPointValue("DXV").size();
+            dim[1] = parser.getFloatingPointValue("DYV").size();
+            dim[2] = parser.getFloatingPointValue("DZV").size();
+        }
+        else
+            OPM_THROW(std::runtime_error,
+                      "Only decks featureing either the SPECGRID or the D[XYZ]V keywords "
+                      "are currently supported");
+
         ecl_rst_file_fwrite_header (*this,
                                     stepNum (timer),
                                     current (timer),
@@ -595,7 +609,22 @@ private:
                                         const EclipseGridParser& parser) {
         boost::filesystem::path casePath (outputDir);
         casePath /= boost::to_upper_copy (baseName);
-        const std::vector<int>& dim = parser.getSPECGRID().dimensions;
+
+        std::vector<int> dim(/*n=*/3);
+        if (parser.hasField("SPECGRID"))
+            dim = parser.getSPECGRID ().dimensions;
+        else if (parser.hasField("DXV")) {
+            assert(parser.hasField("DYV"));
+            assert(parser.hasField("DZV"));
+            dim[0] = parser.getFloatingPointValue("DXV").size();
+            dim[1] = parser.getFloatingPointValue("DYV").size();
+            dim[2] = parser.getFloatingPointValue("DZV").size();
+        }
+        else
+            OPM_THROW(std::runtime_error,
+                      "Only decks featureing either the SPECGRID or the D[XYZ]V keywords "
+                      "are currently supported");
+
         return ecl_sum_alloc_writer (casePath.string ().c_str (),
                                      false, /* formatted   */
                                      true,  /* unified     */
@@ -888,6 +917,73 @@ void EclipseWriter::writeTimeStep(
         }
     }
 
+    // write capillary pressure. for this we first have to compute it
+    // using the property object
+    int numCells = boprops_->numCells();
+    int numActivePhases = reservoirState.numPhases();
+    const PhaseUsage& pu = boprops_->phaseUsage();
+    std::vector<double> pc(/*n=*/numCells * BlackoilPhases::MaxNumPhases);
+
+    // copy the saturations into an array with the ordering expected by the capillary property object
+    std::vector<double> satCopy(/*n=*/numCells * BlackoilPhases::MaxNumPhases);
+    for (int cellIdx = 0; cellIdx < numCells; ++cellIdx) {
+        for (int phaseIdx = 0; phaseIdx < BlackoilPhases::MaxNumPhases; ++phaseIdx) {
+            int satOrigIdx = cellIdx*numActivePhases + pu.phase_pos[phaseIdx];
+            int satCopyIdx = cellIdx*BlackoilPhases::MaxNumPhases + phaseIdx;
+            if (pu.phase_used[phaseIdx])
+                satCopy[satCopyIdx] = reservoirState.saturation()[satOrigIdx];
+            else
+                satCopy[satCopyIdx] = 0;
+        }
+    }
+
+    // create a 'cells' array as required by the capPress method
+    std::vector<int> cells(/*n=*/numCells * BlackoilPhases::MaxNumPhases);
+    for (int cellIdx = 0; cellIdx < numCells; ++cellIdx) {
+        for (int phaseIdx = 0; phaseIdx < BlackoilPhases::MaxNumPhases; ++phaseIdx) {
+            cells[cellIdx*BlackoilPhases::MaxNumPhases + phaseIdx] = cellIdx;
+        }
+    }
+
+    // calculate the actual capillary pressuress
+    boprops_->capPress(/*n=*/numCells,
+                       &satCopy[0],
+                       &cells[0],
+                       &pc[0],
+                       /*dpcds=*/NULL);
+
+    // even more fun here: copy the capillary pressure into the format expected by the output writer
+    if (pu.phase_used[BlackoilPhases::Aqua]) {
+        std::vector<double> pcow(/*n=*/numCells);
+
+        for (int cellIdx = 0; cellIdx < numCells; ++cellIdx) {
+            int pcwIdx = cellIdx*BlackoilPhases::MaxNumPhases + BlackoilPhases::Aqua;
+            int pcoIdx = cellIdx*BlackoilPhases::MaxNumPhases + BlackoilPhases::Liquid;
+            // note: also do the conversion from Pascals to bar
+            pcow[cellIdx] = pasToBar(pc[pcoIdx] - pc[pcwIdx]);
+        }
+
+        // now we can finally add the oil<->water capillary
+        // pressure. For this we have to invent a new ECLIPSE keyword,
+        // though. Let's hope the the Eclipse tools do not shot
+        // themselfs into their heads because of this...
+        sol.add(EclipseKeyword<float> (pcow, "PCOW"));
+    }
+
+    // repeat the whole excercise for the gas <-> oil capillary
+    // pressure.
+    if (pu.phase_used[BlackoilPhases::Vapour]) {
+        std::vector<double> pcgo(/*n=*/numCells);
+
+        for (int cellIdx = 0; cellIdx < numCells; ++cellIdx) {
+            int pcgIdx = cellIdx*BlackoilPhases::MaxNumPhases + BlackoilPhases::Vapour;
+            int pcoIdx = cellIdx*BlackoilPhases::MaxNumPhases + BlackoilPhases::Liquid;
+            pcgo[cellIdx] = pasToBar(pc[pcgIdx] - pc[pcoIdx]);
+        }
+
+        sol.add(EclipseKeyword<float> (pcgo, "PCGO"));
+    }
+
     /* Summary variables (well reporting) */
     sum_->writeTimeStep (timer, wellState);
 }
@@ -913,9 +1009,11 @@ void EclipseWriter::writeTimeStep(
 EclipseWriter::EclipseWriter (
         const ParameterGroup& params,
         std::shared_ptr <const EclipseGridParser> parser,
-        std::shared_ptr <const UnstructuredGrid> grid)
+        std::shared_ptr <const UnstructuredGrid> grid,
+        std::shared_ptr <const BlackoilPropertiesInterface> boprops)
     : parser_ (parser)
     , grid_ (grid)
+    , boprops_(boprops)
     , uses_ (phaseUsageFromDeck (*parser)) {
 
     // get the base name from the name of the deck
@@ -935,6 +1033,11 @@ EclipseWriter::EclipseWriter (
     // store in current directory if not explicitly set
     if (params.has ("output_dir")) {
         outputDir_ = params.get <std::string> ("output_dir");
+    }
+    else {
+        // this is needed to prevent file names like "/FOO.INIT" which
+        // lead to segfaults
+        outputDir_ = ".";
     }
 }
 
