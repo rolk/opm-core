@@ -23,6 +23,7 @@
 
 #include <opm/core/io/OutputWriter.hpp>
 #include <opm/core/props/BlackoilPhases.hpp>
+#include <opm/core/props/BlackoilPropertiesInterface.hpp>
 
 #include <string>
 #include <memory>  // std::unique_ptr
@@ -62,7 +63,8 @@ public:
      */
     EclipseWriter(const parameter::ParameterGroup& params,
                   std::shared_ptr <const EclipseGridParser> parser,
-                  std::shared_ptr <const UnstructuredGrid> grid);
+                  std::shared_ptr <const UnstructuredGrid> grid,
+                  std::shared_ptr <const BlackoilPropertiesInterface> boprops);
 
     /**
      * We need a destructor in the compilation unit to avoid the
@@ -89,6 +91,7 @@ public:
 private:
     std::shared_ptr <const EclipseGridParser> parser_;
     std::shared_ptr <const UnstructuredGrid> grid_;
+    std::shared_ptr <const BlackoilPropertiesInterface> boprops_;
     std::string outputDir_;
     std::string baseName_;
     PhaseUsage uses_;           // active phases in the input deck

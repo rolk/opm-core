@@ -30,6 +30,7 @@ namespace Opm {
 class BlackoilState;
 class EclipseGridParser;
 namespace parameter { class ParameterGroup; }
+class BlackoilPropertiesInterface;
 class SimulatorTimer;
 class WellState;
 
@@ -93,7 +94,8 @@ public:
     static std::unique_ptr <OutputWriter>
     create (const parameter::ParameterGroup& params,
             std::shared_ptr <const EclipseGridParser> parser,
-            std::shared_ptr <const UnstructuredGrid> grid);
+            std::shared_ptr <const UnstructuredGrid> grid,
+            std::shared_ptr <const BlackoilPropertiesInterface> boprops);
 };
 
 } // namespace Opm

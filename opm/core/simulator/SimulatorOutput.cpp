@@ -33,6 +33,7 @@ SimulatorOutputBase::SimulatorOutputBase (
         std::shared_ptr <const EclipseGridParser> parser,
         std::shared_ptr <const UnstructuredGrid> grid,
         std::shared_ptr <const SimulatorTimer> timer,
+        std::shared_ptr <const BlackoilPropertiesInterface> boprops,
         std::shared_ptr <const BlackoilState> state,
         std::shared_ptr <const WellState> wellState)
 
@@ -44,7 +45,7 @@ SimulatorOutputBase::SimulatorOutputBase (
 
     // process parameters into a writer. we don't setup a new chain in
     // every timestep!
-    , writer_ (std::move (OutputWriter::create (params, parser, grid)))
+    , writer_ (std::move (OutputWriter::create (params, parser, grid, boprops)))
 
     // always start from the first timestep
     , next_ (0) {

@@ -47,8 +47,9 @@ private:
 template <typename Format> unique_ptr <OutputWriter>
 create (const ParameterGroup& params,
         std::shared_ptr <const EclipseGridParser> parser,
-        std::shared_ptr <const UnstructuredGrid> grid) {
-    return unique_ptr <OutputWriter> (new Format (params, parser, grid));
+        std::shared_ptr <const UnstructuredGrid> grid,
+        std::shared_ptr <const BlackoilPropertiesInterface> boprops) {
+    return unique_ptr <OutputWriter> (new Format (params, parser, grid, boprops));
 }
 
 /// Map between keyword in configuration and the corresponding
@@ -60,7 +61,8 @@ create (const ParameterGroup& params,
 typedef map <const char*, unique_ptr <OutputWriter> (*)(
         const ParameterGroup&,
         std::shared_ptr <const EclipseGridParser>,
-        std::shared_ptr <const UnstructuredGrid>)> map_t;
+        std::shared_ptr <const UnstructuredGrid>,
+        std::shared_ptr <const BlackoilPropertiesInterface>)> map_t;
 map_t FORMATS = {
     { "output_ecl", &create <EclipseWriter> },
 };
@@ -70,7 +72,8 @@ map_t FORMATS = {
 unique_ptr <OutputWriter>
 OutputWriter::create (const ParameterGroup& params,
                       std::shared_ptr <const EclipseGridParser> parser,
-                      std::shared_ptr <const UnstructuredGrid> grid) {
+                      std::shared_ptr <const UnstructuredGrid> grid,
+                      std::shared_ptr <const BlackoilPropertiesInterface> boprops) {
     // allocate a list which will be filled with writers. this list
     // is initially empty (no output).
     MultiWriter::ptr_t list (new MultiWriter::writers_t ());
@@ -85,7 +88,7 @@ OutputWriter::create (const ParameterGroup& params,
         // invoke the constructor for the type if we found the keyword
         // and put the pointer to this writer onto the list
         if (params.getDefault <bool> (name, false)) {
-            list->push_back (it->second (params, parser, grid));
+            list->push_back (it->second (params, parser, grid, boprops));
         }
     }
 
